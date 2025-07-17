@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+    <title>Article Viewer</title>
+    <script>
+        function reloadFragment() {
+            fetch("/last-get?ts=" + Date.now())
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("present-container").innerHTML = html;
+                })
+                .catch(err => console.error("Fetch error:", err));
+        }
+
+        setInterval(reloadFragment, 5000);  // every 5 seconds
+        window.onload = reloadFragment;
+    </script>
+</head>
+<body>
+    <h1>Enter Page Number</h1>
+    <form method="post">
+        <input type="number" name="page" min="1" required>
+        <button type="submit">Submit</button>
+    </form>
+    <a href="/remove-duplicate">Remove duplicate</a>
+    <h2>Present:</h2>
+    <ul id="present-container">
+        <!-- This will be updated every 5 seconds with last-get.html -->
+    </ul>
+</body>
+</html>
