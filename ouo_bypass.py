@@ -70,7 +70,7 @@ def ouo_bypass(url):
         }
         
         res = client.post(next_url, data=data, headers=h, 
-            allow_redirects=False, impersonate="chrome110")
+            allow_redirects=False)
         next_url = f"{p.scheme}://{p.hostname}/xreallcygo/{id}"
 
     return {
