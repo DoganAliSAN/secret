@@ -29,7 +29,7 @@ async def get_recaptcha_token(page):
     return answer
 
 # ----------------------------------------------------------
-async def ouo_bypass_nodriver(url):
+async def ouo_bypass(url):
     browser = await start(headless=True)
     page = await browser.page()
 
@@ -73,13 +73,13 @@ if __name__ == "__main__":
     url = url_base + url if not url.startswith("http") else url
 
     async def main():
-        out = await ouo_bypass_nodriver(url)
+        out = await ouo_bypass(url)
         bypass = out.get("bypassed_link")
 
         while bypass and "ouo" in bypass:
             new_code = bypass.split(".io/")[1]
             new_url = url_base + new_code
-            out = await ouo_bypass_nodriver(new_url)
+            out = await ouo_bypass(new_url)
             bypass = out.get("bypassed_link")
             print(out)
 
