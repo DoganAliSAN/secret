@@ -1,18 +1,10 @@
 import re
-from curl_cffi import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-import sys 
-# ouo url
-# Examples:
-# https://ouo.io/HxFVfD - ouo.io links (no account -> only one step)
-# https://ouo.press/Zu7Vs5 - ouo.io links (with account -> two steps)
-# Can exchange between ouo.press and ouo.io
-
+import sys
 
 # -------------------------------------------
-#check if there is an argument given
- 
 def RecaptchaV3():
     import requests
     ANCHOR_URL = 'https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Lcr1ncUAAAAAH3cghg6cOTPGARa8adOf-y9zv2x&co=aHR0cHM6Ly9vdW8ucHJlc3M6NDQz&hl=en&v=pCoGBhjs9s8EhFOHJFe8cqis&size=invisible&cb=ahgyd1gkfkhe'
@@ -34,43 +26,40 @@ def RecaptchaV3():
     return answer
 
 # -------------------------------------------
+# create a cloudflare-bypassing scraper
+client = cloudscraper.create_scraper(browser="chrome", platform="android")
 
-client = requests.Session()
 client.headers.update({
     'authority': 'ouo.io',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'accept-language': 'en-US,en;q=0.9',
     'cache-control': 'max-age=0',
-    'referer': 'http://www.google.com/ig/adde?moduleurl=',
+    'referer': 'http://www.google.com/',
     'upgrade-insecure-requests': '1',
+    'origin': 'https://ouo.io'
 })
 
 # -------------------------------------------
-# OUO BYPASS
-
-
 def ouo_bypass(url):
     tempurl = url.replace("ouo.press", "ouo.io")
     p = urlparse(tempurl)
     id = tempurl.split('/')[-1]
-    res = client.get(tempurl, impersonate="chrome110")
+    res = client.get(tempurl)
     next_url = f"{p.scheme}://{p.hostname}/go/{id}"
 
     for _ in range(2):
-
         if res.headers.get('Location'): break
 
         bs4 = BeautifulSoup(res.content, 'lxml')
         inputs = bs4.form.findAll("input", {"name": re.compile(r"token$")})
         data = { input.get('name'): input.get('value') for input in inputs }
         data['x-token'] = RecaptchaV3()
-        
+
         h = {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        
-        res = client.post(next_url, data=data, headers=h, 
-            allow_redirects=False)
+
+        res = client.post(next_url, data=data, headers=h, allow_redirects=False)
         next_url = f"{p.scheme}://{p.hostname}/xreallcygo/{id}"
 
     return {
@@ -79,42 +68,21 @@ def ouo_bypass(url):
     }
 
 # -------------------------------------------
-
-
-
-
-
-# -------------------------------------------
-'''
-SAMPLE OUTPUT
-
-{
-    'original_link': 'https://ouo.io/go/HxFVfD',
-    'bypassed_link': 'https://some-link.com'
-}
-
-'''
-'''
- _._     _,-'""`-._
-(,-.`._,'(       |\`-/|
-    `-.-' \ )-`( , o o)
-          `-    \`_`"'-
-'''
-
 if __name__ == "__main__":
     url_base = "https://ouo.io/"
     if len(sys.argv) > 1:
         url = sys.argv[1]
     else:
         url = input("URL code: ")
-    url = url_base + url
+    url = url_base + url if not url.startswith("http") else url
     out = ouo_bypass(url)
     bypass = out.get("bypassed_link")
-    while "ouo" in bypass:
 
+    while bypass and "ouo" in bypass:
         new_code = bypass.split(".io/")[1]
-        new_url = url_base+new_code
+        new_url = url_base + new_code
         new_out = ouo_bypass(new_url)
         bypass = new_out.get("bypassed_link")
         print(new_out)
+
     print(out)
