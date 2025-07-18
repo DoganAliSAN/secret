@@ -1,24 +1,19 @@
 from flask import Flask, request, render_template, redirect
 from funcs import get_articles_by_page
+from database import init_db, get_all_links, remove_duplicate_links
+import threading
+
 app = Flask(__name__)
+init_db()
 
-# Dummy function — replace this with your actual logic
-def remove_duplicate_lines(filepath):
-    seen = set()
-    unique_lines = []
+# Store log entries in app object
+app.status_log = []
 
-    with open(filepath, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-
-    for line in lines:
-        if line not in seen:
-            seen.add(line)
-            unique_lines.append(line)
-
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.writelines(unique_lines)
-
-    print("Duplicate lines removed. Only the first occurrence of each line was kept.")
+def log_status(message):
+    app.status_log.append(message)
+    print(message)
+    if len(app.status_log) > 500:
+        app.status_log = app.status_log[-200:]
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -28,23 +23,28 @@ def index():
     if request.method == 'POST':
         try:
             page_number = int(request.form.get('page'))
-            articles = get_articles_by_page(page_number)
-
+            log_status("Started page scrape...")
+            thread = threading.Thread(target=get_articles_by_page, args=[page_number, log_status])
+            thread.start()
         except (ValueError, TypeError):
-            pass
+            log_status("Invalid page number")
 
-    return render_template('index.html',articles=articles, page_number=page_number)
+    return render_template('index.html', articles=articles, page_number=page_number)
+
+@app.route("/status")
+def status_func():
+    return "<br>".join(app.status_log[-50:])  # Return last 50 logs
+
 @app.route('/last-get')
 def last_get():
-    try:
-        with open("templates/last-get.html", "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception as e:
-        return f"Error reading file: {e}", 500
+    links = get_all_links()
+    html = "\n".join([f'<a href="{url}" target="_blank">{title}</a><br>' for title, url in links])
+    return html
+
 @app.route("/remove-duplicate")
 def duplicate_removal():
-    filepath = "templates/last-get.html"
-    remove_duplicate_lines(filepath)
+    remove_duplicate_links()
     return redirect("/")
+
 if __name__ == '__main__':
     app.run(debug=False,host='0.0.0.0')
