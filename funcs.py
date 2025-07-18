@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from ouo_bypass import ouo_bypass
 import time
 from database import add_link
-
+import traceback
 # Your proxy configuration
 proxy_url = "http://fOKUYXAOqvb2X9rW:PCpUshlGu2LEiq27_session-Ppg6hvvb_lifetime-5m@geo.iproyal.com:12321"
 proxies = {
@@ -32,6 +32,7 @@ def get_link(url, log_status):
             new_out = bypass
         except Exception as e:
             log_status(f"Retrying bypass ({try_count}) due to error: {e}")
+            log_status(traceback.print_exc())
             new_out = ""
     return new_out
 
