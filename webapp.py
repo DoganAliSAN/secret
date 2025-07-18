@@ -2,7 +2,10 @@ from flask import Flask, request, render_template, redirect
 from funcs import get_articles_by_page
 from database import init_db, get_all_links, remove_duplicate_links
 import threading
+import asyncio
 
+def threaded_scrape(page_number, log_status):
+    asyncio.run(get_articles_by_page(page_number, log_status))
 app = Flask(__name__)
 init_db()
 
@@ -26,7 +29,7 @@ def index():
         try:
             page_number = int(request.form.get('page'))
             log_status("Started page scrape...")
-            thread = threading.Thread(target=get_articles_by_page, args=[page_number, log_status])
+            thread = threading.Thread(target=threaded_scrape, args=[page_number, log_status])
             thread.start()
         except (ValueError, TypeError):
             log_status("Invalid page number")

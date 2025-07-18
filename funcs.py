@@ -4,6 +4,8 @@ from ouo_bypass import ouo_bypass
 import time
 from database import add_link
 import traceback
+import asyncio
+
 # Your proxy configuration
 proxy_url = "http://fOKUYXAOqvb2X9rW:PCpUshlGu2LEiq27_session-Ppg6hvvb_lifetime-5m@geo.iproyal.com:12321"
 proxies = {
@@ -11,7 +13,7 @@ proxies = {
     "https://": proxy_url,
 }
 
-def get_link(url, log_status):
+async def get_link(url, log_status):
     url_base = "https://ouo.io/"
     new_out = ""
     try_count = 0
@@ -19,30 +21,31 @@ def get_link(url, log_status):
         try_count += 1
         try:
             log_status(f"Bypassing ouo: {url}")
-            out = ouo_bypass(url)
+            out = await ouo_bypass(url)
             bypass = out.get("bypassed_link")
 
             while "ouo" in bypass:
                 new_code = bypass.split(".io/")[1]
                 new_url = url_base + new_code
                 log_status(f"Recursing bypass: {new_url}")
-                new_out = ouo_bypass(new_url)
+                new_out = await ouo_bypass(new_url)
                 bypass = new_out.get("bypassed_link")
                 new_out = bypass
             new_out = bypass
         except Exception as e:
             log_status(f"Retrying bypass ({try_count}) due to error: {e}")
-            log_status(traceback.print_exc())
+            traceback_str = traceback.format_exc()
+            log_status(traceback_str)
             new_out = ""
     return new_out
 
-def get_articles_by_page(page_number, log_status):
+async def get_articles_by_page(page_number, log_status):
     url = f"https://turkifsaalemi.com/tia/page/{page_number}"
     log_status(f"Fetching page: {url}")
 
     try:
-        with httpx.Client(timeout=15, follow_redirects=True) as client:            
-            response = client.get(url)
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            response = await client.get(url)
             soup = BeautifulSoup(response.text, "html.parser")
 
             container = soup.select_one("#main-content > div.content > div.post-listing.archive-box")
@@ -60,7 +63,7 @@ def get_articles_by_page(page_number, log_status):
             for post_url in post_links:
                 try:
                     log_status(f"Scraping post: {post_url}")
-                    post_response = client.get(post_url)
+                    post_response = await client.get(post_url)
                     post_soup = BeautifulSoup(post_response.text, "html.parser")
                     title_element = post_soup.select_one("#the-post > div > h1")
                     title = title_element.text if title_element else "No title"
@@ -70,7 +73,7 @@ def get_articles_by_page(page_number, log_status):
                     if p4:
                         a_tags = p4.find_all("a", href=True)
                         for a in a_tags:
-                            p_link = get_link(a["href"], log_status)
+                            p_link = await get_link(a["href"], log_status)
                             log_status("Adding link (p4): " + p_link)
                             add_link(title, p_link)
 
@@ -79,11 +82,11 @@ def get_articles_by_page(page_number, log_status):
                     if p5:
                         a_tags = p5.find_all("a", href=True)
                         for a in a_tags:
-                            p_link = get_link(a["href"], log_status)
+                            p_link = await get_link(a["href"], log_status)
                             log_status("Adding link (p5): " + p_link)
                             add_link(title, p_link)
 
-                    time.sleep(0.5)
+                    await asyncio.sleep(0.5)
                 except Exception as e:
                     log_status(f"Error parsing post: {post_url} — {e}")
                     continue
