@@ -58,7 +58,7 @@ def ouo_bypass(url):
 
             form = bs4.find('form')
             if not form:
-                with open("error.html", "w") as f:
+                with open("templates/error.html", "w") as f:
                     f.write(res.text)
                 raise Exception("No form found on the page")
             inputs = form.findAll("input", {"name": re.compile(r"token$")})

@@ -14,7 +14,9 @@ def log_status(message):
     print(message)
     if len(app.status_log) > 500:
         app.status_log = app.status_log[-200:]
-
+@app.route("/error")
+def display_error():
+    return render_template("error.html")
 @app.route('/', methods=['GET', 'POST'])
 def index():
     articles = []
