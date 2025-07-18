@@ -27,7 +27,7 @@ def RecaptchaV3():
 
 # -------------------------------------------
 # create a cloudflare-bypassing scraper
-client = cloudscraper.create_scraper(browser="chrome", platform="android")
+client = cloudscraper.create_scraper(browser="chrome")
 
 client.headers.update({
     'authority': 'ouo.io',
