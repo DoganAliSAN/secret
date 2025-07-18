@@ -55,8 +55,11 @@ def ouo_bypass(url):
                 break
 
             bs4 = BeautifulSoup(res.content, 'lxml')
+
             form = bs4.find('form')
             if not form:
+                with open("error.html", "w") as f:
+                    f.write(res.text)
                 raise Exception("No form found on the page")
             inputs = form.findAll("input", {"name": re.compile(r"token$")})
             data = {input.get('name'): input.get('value') for input in inputs}
